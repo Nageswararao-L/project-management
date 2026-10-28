@@ -9,7 +9,7 @@ break them into tasks, track status and progress, and see which projects are at 
 
 - **Dashboard** – project/task counts, overdue tasks, upcoming deadlines (next 14 days),
   projects needing attention and team workload.
-- **Projects** – code, name, client, manager, start & end date, status, priority, budget.
+- **Projects** – code, name, client, manager, start & end date, status and priority.
   Filter by status, priority, schedule health and manager; switch between a list and a
   portfolio **timeline (Gantt)** view.
 - **Project page** – details, progress vs. time elapsed, and its tasks as a

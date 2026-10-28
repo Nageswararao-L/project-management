@@ -8,7 +8,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { BaseEntity } from '../common/base.entity';
-import { dateTransformer, decimalTransformer } from '../common/transformers';
+import { dateTransformer } from '../common/transformers';
 import { MemberEntity } from '../members/member.entity';
 import { TaskEntity } from '../tasks/task.entity';
 
@@ -49,15 +49,6 @@ export class ProjectEntity extends BaseEntity {
 
   @Column({ type: 'date', transformer: dateTransformer })
   endDate!: string;
-
-  @Column({
-    type: 'decimal',
-    precision: 18,
-    scale: 2,
-    nullable: true,
-    transformer: decimalTransformer,
-  })
-  budget!: number | null;
 
   @Column({ type: 'int', nullable: true })
   managerId!: number | null;

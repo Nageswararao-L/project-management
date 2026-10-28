@@ -102,7 +102,6 @@ export class ProjectsService {
         ...dto,
         description: dto.description || null,
         client: dto.client || null,
-        budget: dto.budget ?? null,
         managerId: dto.managerId ?? null,
       }),
     );

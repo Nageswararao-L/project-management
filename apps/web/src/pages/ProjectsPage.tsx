@@ -48,12 +48,7 @@ import {
   ProjectStatusTag,
 } from '../components/tags';
 import dayjs from 'dayjs';
-import {
-  durationDays,
-  formatCurrency,
-  formatDate,
-  relativeDays,
-} from '../utils/format';
+import { durationDays, formatDate, relativeDays } from '../utils/format';
 import { useDebounced } from '../utils/useDebounced';
 
 const PRIORITY_ORDER = Object.keys(PRIORITY_LABELS);
@@ -82,7 +77,7 @@ export function ProjectsPage() {
       title: 'Project',
       dataIndex: 'name',
       fixed: 'left',
-      width: 260,
+      width: 205,
       sorter: (a, b) => a.name.localeCompare(b.name),
       render: (name: string, p) => (
         <Flex vertical>
@@ -97,25 +92,27 @@ export function ProjectsPage() {
     {
       title: 'Manager',
       dataIndex: 'manager',
-      width: 170,
+      width: 160,
       render: (m) => <MemberAvatar member={m} />,
     },
     {
       title: 'Start',
       dataIndex: 'startDate',
-      width: 120,
+      width: 130,
       sorter: (a, b) => a.startDate.localeCompare(b.startDate),
       render: formatDate,
     },
     {
       title: 'End',
       dataIndex: 'endDate',
-      width: 140,
+      width: 125,
       defaultSortOrder: 'ascend',
       sorter: (a, b) => a.endDate.localeCompare(b.endDate),
       render: (end: string, p) => (
         <Flex vertical>
-          <span>{formatDate(end)}</span>
+          <Tooltip title={`${durationDays(p.startDate, p.endDate)} days`}>
+            <span>{formatDate(end)}</span>
+          </Tooltip>
           {!CLOSED_PROJECT_STATUSES.includes(p.status) && (
             <Typography.Text
               type={end < dayjs().format('YYYY-MM-DD') ? 'danger' : 'secondary'}
@@ -128,21 +125,15 @@ export function ProjectsPage() {
       ),
     },
     {
-      title: 'Duration',
-      key: 'duration',
-      width: 100,
-      render: (_, p) => `${durationDays(p.startDate, p.endDate)} days`,
-    },
-    {
       title: 'Status',
       dataIndex: 'status',
-      width: 130,
+      width: 120,
       render: (s) => <ProjectStatusTag status={s} />,
     },
     {
       title: 'Priority',
       dataIndex: 'priority',
-      width: 120,
+      width: 110,
       sorter: (a, b) =>
         PRIORITY_ORDER.indexOf(a.priority) - PRIORITY_ORDER.indexOf(b.priority),
       render: (p) => <PriorityTag priority={p} />,
@@ -156,7 +147,7 @@ export function ProjectsPage() {
     {
       title: 'Progress',
       dataIndex: 'progress',
-      width: 170,
+      width: 150,
       sorter: (a, b) => a.progress - b.progress,
       render: (progress: number, p) => (
         <Tooltip
@@ -170,13 +161,6 @@ export function ProjectsPage() {
           </Flex>
         </Tooltip>
       ),
-    },
-    {
-      title: 'Budget',
-      dataIndex: 'budget',
-      width: 110,
-      align: 'right',
-      render: formatCurrency,
     },
     {
       key: 'actions',
@@ -289,7 +273,7 @@ export function ProjectsPage() {
           columns={columns}
           dataSource={projects}
           loading={isLoading}
-          scroll={{ x: 1600 }}
+          scroll={{ x: 1200 }}
           pagination={{ pageSize: 20, hideOnSinglePage: true }}
           onRow={(p) => ({
             onClick: () => navigate(`/projects/${p.id}`),

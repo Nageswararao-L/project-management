@@ -49,12 +49,7 @@ import {
   ProjectStatusTag,
   TASK_STATUS_HEX,
 } from '../components/tags';
-import {
-  durationDays,
-  formatCurrency,
-  formatDate,
-  relativeDays,
-} from '../utils/format';
+import { durationDays, formatDate, relativeDays } from '../utils/format';
 
 export function ProjectDetailPage() {
   const id = Number(useParams().id);
@@ -160,11 +155,6 @@ export function ProjectDetailPage() {
                   key: 'client',
                   label: 'Client',
                   children: project.client ?? '—',
-                },
-                {
-                  key: 'budget',
-                  label: 'Budget',
-                  children: formatCurrency(project.budget),
                 },
                 {
                   key: 'start',

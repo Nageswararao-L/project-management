@@ -43,7 +43,6 @@ export interface Project extends ProjectStats {
   priority: Priority;
   startDate: IsoDate;
   endDate: IsoDate;
-  budget: number | null;
   managerId: number | null;
   manager: Member | null;
   createdAt: string;
@@ -108,7 +107,6 @@ export interface ProjectInput {
   priority: Priority;
   startDate: IsoDate;
   endDate: IsoDate;
-  budget?: number | null;
   managerId?: number | null;
 }
 

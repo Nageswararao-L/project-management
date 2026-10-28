@@ -10,12 +10,10 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
-  Min,
 } from 'class-validator';
 import { IsIsoDate, ToArray, Trim } from '../../common/validation';
 
@@ -64,12 +62,6 @@ export class CreateProjectDto implements ProjectInput {
   @ApiProperty({ example: '2026-03-31' })
   @IsIsoDate()
   endDate!: string;
-
-  @ApiPropertyOptional({ example: 25000 })
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  budget?: number | null;
 
   @ApiPropertyOptional()
   @IsOptional()

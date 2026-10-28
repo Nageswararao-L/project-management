@@ -11,7 +11,6 @@ import {
   Drawer,
   Form,
   Input,
-  InputNumber,
   Row,
   Select,
   Space,
@@ -69,7 +68,6 @@ export function ProjectFormDrawer({ open, project, onClose, onSaved }: Props) {
           ...rest,
           description: rest.description || null,
           client: rest.client || null,
-          budget: rest.budget ?? null,
           managerId: rest.managerId ?? null,
           startDate: toApiDate(start),
           endDate: toApiDate(end),
@@ -185,14 +183,6 @@ export function ProjectFormDrawer({ open, project, onClose, onSaved }: Props) {
             </Form.Item>
           </Col>
         </Row>
-        <Form.Item name="budget" label="Budget (USD)">
-          <InputNumber
-            min={0}
-            precision={2}
-            style={{ width: '100%' }}
-            placeholder="25000"
-          />
-        </Form.Item>
         <Form.Item name="description" label="Description">
           <Input.TextArea
             rows={4}

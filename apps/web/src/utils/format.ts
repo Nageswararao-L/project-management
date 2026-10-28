@@ -7,15 +7,6 @@ export const formatDate = (value?: string | null) =>
 
 export const toApiDate = (value: dayjs.Dayjs) => value.format('YYYY-MM-DD');
 
-export const formatCurrency = (value?: number | null) =>
-  value == null
-    ? '—'
-    : new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }).format(value);
-
 /** Inclusive number of calendar days between two ISO dates. */
 export const durationDays = (start: string, end: string) =>
   dayjs(end).diff(dayjs(start), 'day') + 1;

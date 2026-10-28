@@ -36,8 +36,14 @@ export default defineConfig(() => ({
       output: {
         manualChunks(id: string) {
           if (!id.includes('node_modules')) return undefined;
-          if (/[\\/](antd|@ant-design|rc-[\w-]+|@rc-component)[\\/]/.test(id)) return 'antd';
-          if (/[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) return 'react';
+          if (/[\\/](antd|@ant-design|rc-[\w-]+|@rc-component)[\\/]/.test(id))
+            return 'antd';
+          if (
+            /[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(
+              id,
+            )
+          )
+            return 'react';
           return 'vendor';
         },
       },
