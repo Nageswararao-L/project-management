@@ -1,0 +1,19 @@
+{
+  "name": "@pm/web",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "name": "web"
+  },
+  "dependencies": {
+    "@pm/shared": "*",
+    "@ant-design/icons": "^6.3.4",
+    "@tanstack/react-query": "^5.105.0",
+    "antd": "^6.6.8",
+    "axios": "^1.21.0",
+    "dayjs": "^1.11.23",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.5"
+  }
+}
