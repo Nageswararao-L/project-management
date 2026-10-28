@@ -9,11 +9,15 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { CurrentUser, ManagerOnly } from '../auth/decorators';
 import { CreateMemberDto, UpdateMemberDto } from './dto/member.dto';
+import { MemberEntity } from './member.entity';
 import { MembersService } from './members.service';
 
 @ApiTags('Team members')
+@ApiBearerAuth()
+@ManagerOnly()
 @Controller('members')
 export class MembersController {
   constructor(private readonly service: MembersService) {}
@@ -29,13 +33,20 @@ export class MembersController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateMemberDto) {
-    return this.service.update(id, dto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMemberDto,
+    @CurrentUser() user: MemberEntity,
+  ) {
+    return this.service.update(id, dto, user.id);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.service.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: MemberEntity,
+  ) {
+    return this.service.remove(id, user.id);
   }
 }

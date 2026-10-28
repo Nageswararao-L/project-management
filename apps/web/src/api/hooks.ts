@@ -2,6 +2,7 @@ import type {
   DashboardSummary,
   MemberInput,
   MemberWithWorkload,
+  OwnTaskUpdate,
   Priority,
   Project,
   ProjectHealth,
@@ -13,6 +14,7 @@ import type {
 } from '@pm/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { App } from 'antd';
+import { useAuth } from '../auth/AuthContext';
 import { errorMessage, http } from './client';
 
 export interface ProjectFilters {
@@ -76,11 +78,15 @@ export const useTasks = (filters: TaskFilters = {}, enabled = true) =>
     enabled,
   });
 
-export const useMembers = () =>
-  useQuery({
+/** Team list; only managers may load it (users get an empty list). */
+export function useMembers() {
+  const { isManager } = useAuth();
+  return useQuery({
     queryKey: ['members'],
     queryFn: () => get<MemberWithWorkload[]>('/members'),
+    enabled: isManager,
   });
+}
 
 /**
  * Mutation that refreshes every cached list afterwards (stats such as progress,
@@ -121,11 +127,26 @@ export const useDeleteProject = () =>
   );
 
 export const useSaveTask = () =>
-  useApiMutation(({ id, data }: { id?: number; data: TaskInput }) => {
-    if (!id) return http.post<Task>('/tasks', data).then((r) => r.data);
-    const { projectId: _projectId, ...changes } = data;
-    return http.patch<Task>(`/tasks/${id}`, changes).then((r) => r.data);
-  }, 'Task saved');
+  useApiMutation(
+    ({
+      id,
+      data,
+      ownTaskOnly,
+    }: {
+      id?: number;
+      data: TaskInput;
+      /** Users may only change status and progress of their own tasks. */
+      ownTaskOnly?: boolean;
+    }) => {
+      if (!id) return http.post<Task>('/tasks', data).then((r) => r.data);
+      const { projectId: _projectId, ...changes } = data;
+      const body: Partial<TaskInput> | OwnTaskUpdate = ownTaskOnly
+        ? { status: data.status, progress: data.progress }
+        : changes;
+      return http.patch<Task>(`/tasks/${id}`, body).then((r) => r.data);
+    },
+    'Task saved',
+  );
 
 export const useUpdateTaskStatus = () =>
   useApiMutation(({ id, status }: { id: number; status: TaskStatus }) =>

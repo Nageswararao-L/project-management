@@ -1,6 +1,13 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Priority, ProjectStatus, TaskStatus, toIsoDate } from '@pm/shared';
+import {
+  Priority,
+  ProjectStatus,
+  TaskStatus,
+  toIsoDate,
+  UserRole,
+} from '@pm/shared';
+import { hashPassword } from '../auth/password';
 import { DataSource } from 'typeorm';
 import { MemberEntity } from '../members/member.entity';
 import { ProjectEntity } from '../projects/project.entity';
@@ -27,9 +34,15 @@ type SeedTask = [
 const { Todo, InProgress, InReview, Blocked, Done } = TaskStatus;
 const { Low, Medium, High, Critical } = Priority;
 
+/** Password of every demo account (see README). */
+export const DEMO_PASSWORD = 'Password@123';
+
 /**
- * Inserts sample data (dates relative to today) into an empty database
- * when SEED_DEMO_DATA=true, so the dashboard has something to show.
+ * On startup:
+ * - inserts sample data (dates relative to today) into an empty database
+ *   when SEED_DEMO_DATA=true, so the dashboard has something to show;
+ * - creates the first manager account from ADMIN_EMAIL / ADMIN_PASSWORD
+ *   when no manager can sign in yet.
  */
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
@@ -41,21 +54,85 @@ export class SeedService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    if (this.config.get('SEED_DEMO_DATA') !== 'true') return;
+    if (this.config.get('SEED_DEMO_DATA') === 'true') await this.seedDemoData();
+    await this.ensureAdmin();
+  }
+
+  private async ensureAdmin() {
+    const members = this.dataSource.getRepository(MemberEntity);
+    const managerCanSignIn = await members
+      .createQueryBuilder('m')
+      .where('m.role = :role', { role: UserRole.Manager })
+      .andWhere('m.isActive = 1')
+      .andWhere('m.passwordHash IS NOT NULL')
+      .getExists();
+    if (managerCanSignIn) return;
+
+    const email = this.config.get<string>('ADMIN_EMAIL')?.trim().toLowerCase();
+    const password = this.config.get<string>('ADMIN_PASSWORD');
+    if (!email || !password) {
+      this.logger.warn(
+        'No manager account can sign in. Set ADMIN_EMAIL and ADMIN_PASSWORD to create one.',
+      );
+      return;
+    }
+    const existing = await members.findOneBy({ email });
+    await members.save({
+      ...existing,
+      email,
+      name: existing?.name ?? this.config.get('ADMIN_NAME', 'Administrator'),
+      role: UserRole.Manager,
+      isActive: true,
+      passwordHash: await hashPassword(password),
+    });
+    this.logger.log(`Manager account ready: ${email}`);
+  }
+
+  private async seedDemoData() {
     if ((await this.dataSource.getRepository(ProjectEntity).count()) > 0)
       return;
+    const passwordHash = await hashPassword(DEMO_PASSWORD);
     await this.dataSource.transaction(async (em) => {
+      const { Manager, User } = UserRole;
       const members = await em.save(
         MemberEntity,
-        [
-          ['Aarav Patel', 'aarav.patel@example.com', 'Tech Lead'],
-          ['Priya Sharma', 'priya.sharma@example.com', 'Frontend Developer'],
-          ['Rahul Verma', 'rahul.verma@example.com', 'Backend Developer'],
-          ['Sneha Reddy', 'sneha.reddy@example.com', 'QA Engineer'],
-          ['Kiran Rao', 'kiran.rao@example.com', 'UI/UX Designer'],
-          ['Anita Desai', 'anita.desai@example.com', 'Business Analyst'],
-        ].map(([name, email, role]) =>
-          em.create(MemberEntity, { name, email, role }),
+        (
+          [
+            [
+              'Aarav Patel',
+              'aarav.patel@example.com',
+              'Project Manager',
+              Manager,
+            ],
+            [
+              'Priya Sharma',
+              'priya.sharma@example.com',
+              'Frontend Developer',
+              User,
+            ],
+            [
+              'Rahul Verma',
+              'rahul.verma@example.com',
+              'Backend Developer',
+              User,
+            ],
+            ['Sneha Reddy', 'sneha.reddy@example.com', 'QA Engineer', User],
+            ['Kiran Rao', 'kiran.rao@example.com', 'UI/UX Designer', User],
+            [
+              'Anita Desai',
+              'anita.desai@example.com',
+              'Delivery Manager',
+              Manager,
+            ],
+          ] as const
+        ).map(([name, email, jobTitle, role]) =>
+          em.create(MemberEntity, {
+            name,
+            email,
+            jobTitle,
+            role,
+            passwordHash,
+          }),
         ),
       );
 

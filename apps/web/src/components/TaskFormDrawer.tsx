@@ -16,6 +16,7 @@ import {
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect } from 'react';
 import { useMembers, useProjects, useSaveTask } from '../api/hooks';
+import { useAuth } from '../auth/AuthContext';
 import { DATE_FORMAT, formatDate, toApiDate } from '../utils/format';
 import { PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from './tags';
 
@@ -44,6 +45,9 @@ export function TaskFormDrawer({
   const { data: projects = [] } = useProjects();
   const { data: members = [] } = useMembers();
   const save = useSaveTask();
+  const { isManager } = useAuth();
+  // Users can open their own tasks but only change status and progress.
+  const limited = !isManager;
 
   const selectedProjectId = Form.useWatch('projectId', form);
   const status = Form.useWatch('status', form);
@@ -77,6 +81,7 @@ export function TaskFormDrawer({
     const saved = await save
       .mutateAsync({
         id: task?.id,
+        ownTaskOnly: limited,
         data: {
           ...rest,
           description: rest.description || null,
@@ -97,7 +102,7 @@ export function TaskFormDrawer({
 
   return (
     <Drawer
-      title={task ? 'Edit task' : 'New task'}
+      title={limited ? 'Update my task' : task ? 'Edit task' : 'New task'}
       size={560}
       open={open}
       onClose={onClose}
@@ -111,7 +116,20 @@ export function TaskFormDrawer({
         </Space>
       }
     >
-      <Form form={form} layout="vertical" requiredMark="optional">
+      <Form
+        form={form}
+        layout="vertical"
+        requiredMark="optional"
+        disabled={limited}
+      >
+        {limited && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            title="You can update the status and progress of your task. Ask your manager to change anything else."
+          />
+        )}
         <Form.Item
           name="projectId"
           label="Project"
@@ -165,6 +183,7 @@ export function TaskFormDrawer({
               rules={[{ required: true }]}
             >
               <Select
+                disabled={false}
                 options={TASK_STATUS_OPTIONS}
                 onChange={(value: TaskStatus) => {
                   if (value === TaskStatus.Done)
@@ -192,9 +211,15 @@ export function TaskFormDrawer({
                 allowClear
                 showSearch={{ optionFilterProp: 'label' }}
                 placeholder="Unassigned"
-                options={members
-                  .filter((m) => m.isActive || m.id === task?.assigneeId)
-                  .map((m) => ({ value: m.id, label: m.name }))}
+                options={
+                  members.length
+                    ? members
+                        .filter((m) => m.isActive || m.id === task?.assigneeId)
+                        .map((m) => ({ value: m.id, label: m.name }))
+                    : task?.assignee
+                      ? [{ value: task.assignee.id, label: task.assignee.name }]
+                      : []
+                }
               />
             </Form.Item>
           </Col>

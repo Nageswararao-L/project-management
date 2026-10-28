@@ -3,6 +3,7 @@ import type {
   ProjectHealth,
   ProjectStatus,
   TaskStatus,
+  UserRole,
 } from './enums.js';
 
 /** Calendar date in ISO format, e.g. `2026-03-31`. */
@@ -12,13 +13,16 @@ export interface Member {
   id: number;
   name: string;
   email: string;
-  role: string | null;
+  jobTitle: string | null;
+  role: UserRole;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface MemberWithWorkload extends Member {
+  /** Whether a password is set, i.e. the member can sign in. */
+  hasLogin: boolean;
   openTasks: number;
   overdueTasks: number;
   managedProjects: number;
@@ -126,6 +130,22 @@ export interface TaskInput {
 export interface MemberInput {
   name: string;
   email: string;
-  role?: string | null;
+  jobTitle?: string | null;
+  role?: UserRole;
+  /** Sets or resets the sign-in password (min. 8 characters). */
+  password?: string;
   isActive?: boolean;
+}
+
+/** Fields a user (non-manager) may change on a task assigned to them. */
+export type OwnTaskUpdate = Pick<TaskInput, 'status' | 'progress'>;
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  user: Member;
 }

@@ -4,7 +4,12 @@ import {
   PlusOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import type { MemberInput, MemberWithWorkload } from '@pm/shared';
+import {
+  type MemberInput,
+  type MemberWithWorkload,
+  USER_ROLE_LABELS,
+  UserRole,
+} from '@pm/shared';
 import {
   Button,
   Card,
@@ -13,6 +18,7 @@ import {
   Input,
   Modal,
   Popconfirm,
+  Select,
   Space,
   Switch,
   Table,
@@ -22,7 +28,13 @@ import {
 } from 'antd';
 import { useEffect, useState } from 'react';
 import { useDeleteMember, useMembers, useSaveMember } from '../api/hooks';
+import { useAuth } from '../auth/AuthContext';
 import { MemberAvatar } from '../components/MemberAvatar';
+
+const ROLE_OPTIONS = Object.values(UserRole).map((value) => ({
+  value,
+  label: USER_ROLE_LABELS[value],
+}));
 
 function MemberModal({
   member,
@@ -35,11 +47,13 @@ function MemberModal({
 }) {
   const [form] = Form.useForm<MemberInput>();
   const save = useSaveMember();
+  const { user } = useAuth();
+  const isSelf = member?.id === user?.id;
 
   useEffect(() => {
     if (!open) return;
     form.resetFields();
-    form.setFieldsValue(member ?? { isActive: true });
+    form.setFieldsValue(member ?? { isActive: true, role: UserRole.User });
   }, [open, member, form]);
 
   const submit = async () => {
@@ -48,7 +62,12 @@ function MemberModal({
     const saved = await save
       .mutateAsync({
         id: member?.id,
-        data: { ...values, role: values.role || null },
+        data: {
+          ...values,
+          jobTitle: values.jobTitle || null,
+          // An empty password field keeps the current password.
+          password: values.password || undefined,
+        },
       })
       .catch(() => null);
     if (saved) onClose();
@@ -83,16 +102,40 @@ function MemberModal({
         >
           <Input maxLength={150} />
         </Form.Item>
-        <Form.Item name="role" label="Role">
+        <Form.Item name="jobTitle" label="Job title">
           <Input placeholder="e.g. Backend Developer" maxLength={100} />
+        </Form.Item>
+        <Form.Item
+          name="role"
+          label="Access"
+          rules={[{ required: true }]}
+          extra={
+            isSelf
+              ? "You can't remove your own manager access."
+              : 'Managers see and manage everything. Users only see the tasks assigned to them.'
+          }
+        >
+          <Select options={ROLE_OPTIONS} disabled={isSelf} />
+        </Form.Item>
+        <Form.Item
+          name="password"
+          label={member?.hasLogin ? 'New password' : 'Password'}
+          rules={[{ min: 8, message: 'At least 8 characters' }]}
+          extra={
+            member?.hasLogin
+              ? 'Leave empty to keep the current password.'
+              : 'Set a password so this person can sign in. Leave empty for no sign-in.'
+          }
+        >
+          <Input.Password autoComplete="new-password" maxLength={128} />
         </Form.Item>
         <Form.Item
           name="isActive"
           label="Active"
           valuePropName="checked"
-          extra="Inactive members can't be assigned new tasks."
+          extra="Inactive members can't sign in or be assigned new tasks."
         >
-          <Switch />
+          <Switch disabled={isSelf} />
         </Form.Item>
       </Form>
     </Modal>
@@ -100,6 +143,7 @@ function MemberModal({
 }
 
 export function TeamPage() {
+  const { user } = useAuth();
   const { data: members = [], isLoading } = useMembers();
   const deleteMember = useDeleteMember();
   const [modal, setModal] = useState<{
@@ -140,7 +184,33 @@ export function TeamPage() {
                 </Space>
               ),
             },
-            { title: 'Role', dataIndex: 'role', render: (r) => r ?? '—' },
+            {
+              title: 'Job title',
+              dataIndex: 'jobTitle',
+              render: (t) => t ?? '—',
+            },
+            {
+              title: 'Access',
+              dataIndex: 'role',
+              width: 120,
+              filters: ROLE_OPTIONS.map((o) => ({
+                text: o.label,
+                value: o.value,
+              })),
+              onFilter: (value, m) => m.role === value,
+              render: (role: UserRole, m) => (
+                <Space size={4}>
+                  <Tag color={role === UserRole.Manager ? 'gold' : 'blue'}>
+                    {USER_ROLE_LABELS[role]}
+                  </Tag>
+                  {!m.hasLogin && (
+                    <Tooltip title="No password set: this person cannot sign in">
+                      <Tag>No sign-in</Tag>
+                    </Tooltip>
+                  )}
+                </Space>
+              ),
+            },
             {
               title: 'Email',
               dataIndex: 'email',
@@ -188,15 +258,17 @@ export function TeamPage() {
                       onClick={() => setModal({ open: true, member: m })}
                     />
                   </Tooltip>
-                  <Popconfirm
-                    title={`Remove ${m.name}?`}
-                    description="Their tasks and projects become unassigned."
-                    okText="Remove"
-                    okButtonProps={{ danger: true }}
-                    onConfirm={() => deleteMember.mutateAsync(m.id)}
-                  >
-                    <Button type="text" danger icon={<DeleteOutlined />} />
-                  </Popconfirm>
+                  {m.id !== user?.id && (
+                    <Popconfirm
+                      title={`Remove ${m.name}?`}
+                      description="Their tasks and projects become unassigned."
+                      okText="Remove"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => deleteMember.mutateAsync(m.id)}
+                    >
+                      <Button type="text" danger icon={<DeleteOutlined />} />
+                    </Popconfirm>
+                  )}
                 </Space>
               ),
             },

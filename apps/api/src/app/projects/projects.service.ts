@@ -11,10 +11,12 @@ import {
   ProjectStats,
   TaskStatus,
   toIsoDate,
+  UserRole,
 } from '@pm/shared';
 import { Brackets, In, Repository } from 'typeorm';
 import { assertDateRange } from '../common/validation';
 import { MemberEntity } from '../members/member.entity';
+import { toMemberJson } from '../members/members.service';
 import { TaskEntity } from '../tasks/task.entity';
 import {
   CreateProjectDto,
@@ -42,12 +44,23 @@ export class ProjectsService {
     private readonly members: Repository<MemberEntity>,
   ) {}
 
-  async findAll(query: ProjectQueryDto = {}): Promise<Project[]> {
+  /** Users (non-managers) only see projects that have a task assigned to them. */
+  async findAll(
+    query: ProjectQueryDto = {},
+    viewer?: MemberEntity,
+  ): Promise<Project[]> {
     const qb = this.projects
       .createQueryBuilder('p')
       .leftJoinAndSelect('p.manager', 'manager')
       .orderBy('p.endDate', 'ASC')
       .addOrderBy('p.name', 'ASC');
+
+    if (viewer && viewer.role !== UserRole.Manager) {
+      qb.andWhere(
+        'EXISTS (SELECT 1 FROM tasks vt WHERE vt.projectId = p.id AND vt.assigneeId = :viewerId)',
+        { viewerId: viewer.id },
+      );
+    }
 
     if (query.search?.trim()) {
       qb.andWhere(
@@ -78,8 +91,15 @@ export class ProjectsService {
       : projects;
   }
 
-  async findOne(id: number): Promise<Project> {
+  async findOne(id: number, viewer?: MemberEntity): Promise<Project> {
     const project = await this.getEntity(id);
+    if (
+      viewer &&
+      viewer.role !== UserRole.Manager &&
+      !(await this.tasks.existsBy({ projectId: id, assigneeId: viewer.id }))
+    ) {
+      throw new NotFoundException(`Project #${id} not found`);
+    }
     const stats = await this.statsFor([project]);
     return this.toJson(project, stats.get(id));
   }
@@ -185,13 +205,7 @@ export class ProjectsService {
       ...fields,
       ...stats,
       health: computeProjectHealth({ ...p, ...stats }),
-      manager: manager
-        ? {
-            ...manager,
-            createdAt: manager.createdAt.toISOString(),
-            updatedAt: manager.updatedAt.toISOString(),
-          }
-        : null,
+      manager: manager ? toMemberJson(manager) : null,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
     };

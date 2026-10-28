@@ -15,6 +15,12 @@ export enum TaskStatus {
   Done = 'DONE',
 }
 
+/** Login level: managers see and manage everything, users only their own tasks. */
+export enum UserRole {
+  Manager = 'MANAGER',
+  User = 'USER',
+}
+
 export enum Priority {
   Low = 'LOW',
   Medium = 'MEDIUM',
@@ -45,6 +51,11 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   [TaskStatus.InReview]: 'In Review',
   [TaskStatus.Blocked]: 'Blocked',
   [TaskStatus.Done]: 'Done',
+};
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  [UserRole.Manager]: 'Manager',
+  [UserRole.User]: 'User',
 };
 
 export const PRIORITY_LABELS: Record<Priority, string> = {

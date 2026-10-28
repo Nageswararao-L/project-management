@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { typeOrmOptions } from './database/database.config';
 import { SeedService } from './database/seed.service';
@@ -19,6 +20,7 @@ import { TasksModule } from './tasks/tasks.module';
       inject: [ConfigService],
       useFactory: typeOrmOptions,
     }),
+    AuthModule,
     MembersModule,
     ProjectsModule,
     TasksModule,

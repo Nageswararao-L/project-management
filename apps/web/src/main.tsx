@@ -4,6 +4,7 @@ import { StrictMode, useState } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './app/app';
+import { AuthProvider } from './auth/AuthContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,9 +46,11 @@ function Root() {
     >
       <AntApp>
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <App darkMode={darkMode} onToggleDarkMode={toggle} />
-          </BrowserRouter>
+          <AuthProvider>
+            <BrowserRouter>
+              <App darkMode={darkMode} onToggleDarkMode={toggle} />
+            </BrowserRouter>
+          </AuthProvider>
         </QueryClientProvider>
       </AntApp>
     </ConfigProvider>

@@ -35,6 +35,7 @@ import {
   useMembers,
   useProjects,
 } from '../api/hooks';
+import { useAuth } from '../auth/AuthContext';
 import { GanttChart } from '../components/GanttChart';
 import { MemberAvatar } from '../components/MemberAvatar';
 import { ProjectFormDrawer } from '../components/ProjectFormDrawer';
@@ -55,6 +56,7 @@ const PRIORITY_ORDER = Object.keys(PRIORITY_LABELS);
 
 export function ProjectsPage() {
   const navigate = useNavigate();
+  const { isManager } = useAuth();
   const [filters, setFilters] = useState<ProjectFilters>({});
   const [view, setView] = useState<'table' | 'timeline'>('table');
   const [drawer, setDrawer] = useState<{ open: boolean; project?: Project }>({
@@ -72,7 +74,7 @@ export function ProjectsPage() {
   const update = (patch: Partial<ProjectFilters>) =>
     setFilters((f) => ({ ...f, ...patch }));
 
-  const columns: ColumnsType<Project> = [
+  const allColumns: ColumnsType<Project> = [
     {
       title: 'Project',
       dataIndex: 'name',
@@ -189,12 +191,15 @@ export function ProjectsPage() {
       ),
     },
   ];
+  const columns = isManager
+    ? allColumns
+    : allColumns.filter((c) => c.key !== 'actions');
 
   return (
     <Flex vertical gap={16}>
       <Flex justify="space-between" align="center" wrap gap={8}>
         <Typography.Title level={3} style={{ margin: 0 }}>
-          Projects
+          {isManager ? 'Projects' : 'My projects'}
         </Typography.Title>
         <Space wrap>
           <Segmented
@@ -209,13 +214,15 @@ export function ProjectsPage() {
               },
             ]}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setDrawer({ open: true })}
-          >
-            New project
-          </Button>
+          {isManager && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setDrawer({ open: true })}
+            >
+              New project
+            </Button>
+          )}
         </Space>
       </Flex>
 

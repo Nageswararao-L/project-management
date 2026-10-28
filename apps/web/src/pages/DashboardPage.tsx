@@ -32,6 +32,7 @@ import {
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { errorMessage } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { useDashboard } from '../api/hooks';
 import { BarRows } from '../components/BarRows';
 import { MemberAvatar } from '../components/MemberAvatar';
@@ -48,6 +49,7 @@ import { formatDate, relativeDays } from '../utils/format';
 export function DashboardPage() {
   const { data, isLoading, error } = useDashboard();
   const navigate = useNavigate();
+  const { user, isManager } = useAuth();
   const [editing, setEditing] = useState<Task | null>(null);
 
   if (error) {
@@ -99,7 +101,7 @@ export function DashboardPage() {
   return (
     <Flex vertical gap={16}>
       <Typography.Title level={3} style={{ margin: 0 }}>
-        Dashboard
+        {isManager ? 'Dashboard' : `Welcome, ${user?.name}`}
       </Typography.Title>
 
       <Row gutter={[16, 16]}>
@@ -317,7 +319,7 @@ export function DashboardPage() {
       </Row>
 
       <Row gutter={[16, 16]}>
-        <Col xs={24} xl={14}>
+        <Col xs={24} xl={isManager ? 14 : 24}>
           <Card
             title={
               <>
@@ -372,36 +374,38 @@ export function DashboardPage() {
             />
           </Card>
         </Col>
-        <Col xs={24} xl={10}>
-          <Card
-            title="Team workload (open tasks)"
-            extra={<Link to="/team">Team</Link>}
-          >
-            {data.workload.length ? (
-              <BarRows
-                rows={[...data.workload]
-                  .sort((a, b) => b.openTasks - a.openTasks)
-                  .map((m) => ({
-                    key: m.id,
-                    label: m.name,
-                    value: m.openTasks,
-                    color: '#1677ff',
-                    note: m.overdueTasks ? (
-                      <Typography.Text type="danger">
-                        <WarningOutlined /> {m.overdueTasks} overdue
-                      </Typography.Text>
-                    ) : undefined,
-                    tooltip: `${m.name}: ${m.openTasks} open, ${m.overdueTasks} overdue`,
-                  }))}
-              />
-            ) : (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="No team members yet"
-              />
-            )}
-          </Card>
-        </Col>
+        {isManager && (
+          <Col xs={24} xl={10}>
+            <Card
+              title="Team workload (open tasks)"
+              extra={<Link to="/team">Team</Link>}
+            >
+              {data.workload.length ? (
+                <BarRows
+                  rows={[...data.workload]
+                    .sort((a, b) => b.openTasks - a.openTasks)
+                    .map((m) => ({
+                      key: m.id,
+                      label: m.name,
+                      value: m.openTasks,
+                      color: '#1677ff',
+                      note: m.overdueTasks ? (
+                        <Typography.Text type="danger">
+                          <WarningOutlined /> {m.overdueTasks} overdue
+                        </Typography.Text>
+                      ) : undefined,
+                      tooltip: `${m.name}: ${m.openTasks} open, ${m.overdueTasks} overdue`,
+                    }))}
+                />
+              ) : (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="No team members yet"
+                />
+              )}
+            </Card>
+          </Col>
+        )}
       </Row>
 
       <TaskFormDrawer

@@ -1,3 +1,4 @@
+import { UserRole } from '@pm/shared';
 import { Column, Entity, Index } from 'typeorm';
 import { BaseEntity } from '../common/base.entity';
 
@@ -11,7 +12,19 @@ export class MemberEntity extends BaseEntity {
   email!: string;
 
   @Column({ type: 'nvarchar', length: 100, nullable: true })
-  role!: string | null;
+  jobTitle!: string | null;
+
+  @Column({
+    type: 'simple-enum',
+    length: 20,
+    enum: UserRole,
+    default: UserRole.User,
+  })
+  role!: UserRole;
+
+  /** scrypt hash; null means the member cannot sign in. Never selected by default. */
+  @Column({ type: 'nvarchar', length: 255, nullable: true, select: false })
+  passwordHash?: string | null;
 
   @Column({ type: 'bit', default: true })
   isActive!: boolean;

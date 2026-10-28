@@ -7,6 +7,11 @@ break them into tasks, track status and progress, and see which projects are at 
 
 ## Features
 
+- **Sign-in with two access levels**
+  - **Manager** – sees and manages everything: all projects, all tasks, the team.
+  - **User** – sees only the tasks assigned to them (and the projects those tasks
+    belong to) and can update the status and progress of those tasks.
+
 - **Dashboard** – project/task counts, overdue tasks, upcoming deadlines (next 14 days),
   projects needing attention and team workload.
 - **Projects** – code, name, client, manager, start & end date, status and priority.
@@ -30,6 +35,9 @@ break them into tasks, track status and progress, and see which projects are at 
 | Project progress = average of its tasks' progress | API |
 | **Health**: `Closed` (completed/cancelled) · `Overdue` (end date passed) · `At risk` (on hold, has overdue tasks, or progress > 15 points behind time elapsed) · otherwise `On track` | `libs/shared` |
 | Removing a team member unassigns their tasks/projects | API |
+| Users only ever receive their own tasks; other tasks/projects return 404 | API |
+| Only managers can create/edit/delete projects, tasks and team members | API + UI |
+| A manager can't demote, deactivate or delete their own account | API + UI |
 
 ## Project structure
 
@@ -37,6 +45,7 @@ break them into tasks, track status and progress, and see which projects are at 
 apps/
   api/            NestJS REST API (TypeORM + mssql)
     src/app/
+      auth/       sign-in (JWT), global auth guard, @ManagerOnly()
       members/    team members
       projects/   projects + per-project task statistics
       tasks/      tasks
@@ -83,6 +92,9 @@ Prerequisites: Node.js 20+ and a SQL Server 2022 instance.
    | `DB_MIGRATIONS_RUN` | `true` | Apply pending migrations on startup |
    | `DB_SYNCHRONIZE` | `false` | Auto-sync schema from entities (dev only) |
    | `SEED_DEMO_DATA` | `true` in example | Insert sample projects, tasks and team into an empty database |
+   | `JWT_SECRET` | dev secret | Secret used to sign sign-in tokens (**required in production**) |
+   | `JWT_EXPIRES_IN` | `12h` | How long a sign-in lasts |
+   | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | – | Creates the first manager account on startup if no manager can sign in |
    | `PORT` | `3000` | API port |
    | `CORS_ORIGIN` | all | Comma-separated allowed origins |
 
@@ -96,6 +108,18 @@ Prerequisites: Node.js 20+ and a SQL Server 2022 instance.
    - API: http://localhost:3000/api
    - Swagger docs: http://localhost:3000/api/docs
 
+### Signing in
+
+With `SEED_DEMO_DATA=true` every demo account uses the password `Password@123`:
+
+| Email | Access |
+| --- | --- |
+| `aarav.patel@example.com`, `anita.desai@example.com` | Manager |
+| `priya.sharma@example.com`, `rahul.verma@example.com`, `sneha.reddy@example.com`, `kiran.rao@example.com` | User |
+
+For a real database, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` before the first start;
+that manager then adds the team under **Team** and sets each person's password and access.
+
 ## Scripts
 
 | Command | Description |
@@ -108,15 +132,22 @@ Prerequisites: Node.js 20+ and a SQL Server 2022 instance.
 
 ## API overview
 
+All endpoints except login and health need an `Authorization: Bearer <token>` header.
+Endpoints marked *manager* return 403 for users; list endpoints return only the
+user's own data.
+
 | Method | Path | Description |
 | --- | --- | --- |
-| GET | `/api/dashboard` | Dashboard summary |
+| POST | `/api/auth/login` | Sign in with email + password, returns a token |
+| GET | `/api/auth/me` | The signed-in member |
+| GET | `/api/dashboard` | Dashboard summary (users: their own tasks) |
 | GET | `/api/projects?search=&status=&priority=&health=&managerId=` | Projects with progress & health |
-| GET / POST / PATCH / DELETE | `/api/projects/:id` | Project CRUD (delete cascades to tasks) |
+| GET / POST / PATCH / DELETE | `/api/projects/:id` | Project CRUD (delete cascades to tasks); writes *manager* |
 | GET | `/api/tasks?projectId=&assigneeId=&status=&priority=&search=&overdue=true&dueWithinDays=` | Tasks |
-| POST / PATCH / DELETE | `/api/tasks/:id` | Task CRUD |
+| POST / DELETE | `/api/tasks/:id` | Create / delete a task (*manager*) |
+| PATCH | `/api/tasks/:id` | Update a task (users: only `status` and `progress` of their own tasks) |
 | PATCH | `/api/tasks/:id/status` | Change only the status (Kanban) |
-| GET / POST / PATCH / DELETE | `/api/members/:id` | Team members with workload |
+| GET / POST / PATCH / DELETE | `/api/members/:id` | Team members with workload, access and password (*manager*) |
 | GET | `/api/health` | API + database health check |
 
 Multi-value filters accept comma-separated values, e.g. `?status=IN_PROGRESS,ON_HOLD`.

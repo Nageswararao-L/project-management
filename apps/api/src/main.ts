@@ -23,6 +23,7 @@ async function bootstrap() {
     .setTitle('Project Management API')
     .setDescription('Projects, tasks, schedules and team workload')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
   SwaggerModule.setup(
     `${globalPrefix}/docs`,

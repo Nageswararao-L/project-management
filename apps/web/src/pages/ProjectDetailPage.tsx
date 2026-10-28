@@ -36,6 +36,7 @@ import dayjs from 'dayjs';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { errorMessage } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { useDeleteProject, useProject, useTasks } from '../api/hooks';
 import { GanttChart } from '../components/GanttChart';
 import { KanbanBoard } from '../components/KanbanBoard';
@@ -54,6 +55,7 @@ import { durationDays, formatDate, relativeDays } from '../utils/format';
 export function ProjectDetailPage() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
+  const { isManager } = useAuth();
   const { data: project, isLoading, error } = useProject(id);
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(
     { projectId: id },
@@ -111,32 +113,37 @@ export function ProjectDetailPage() {
             <HealthBadge health={project.health} />
           </Space>
         </Flex>
-        <Space wrap>
-          <Button icon={<EditOutlined />} onClick={() => setEditProject(true)}>
-            Edit project
-          </Button>
-          <Popconfirm
-            title={`Delete ${project.code}?`}
-            description="This also deletes all of its tasks."
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={async () => {
-              await deleteProject.mutateAsync(project.id);
-              navigate('/projects');
-            }}
-          >
-            <Button danger icon={<DeleteOutlined />}>
-              Delete
+        {isManager && (
+          <Space wrap>
+            <Button
+              icon={<EditOutlined />}
+              onClick={() => setEditProject(true)}
+            >
+              Edit project
             </Button>
-          </Popconfirm>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => addTask()}
-          >
-            Add task
-          </Button>
-        </Space>
+            <Popconfirm
+              title={`Delete ${project.code}?`}
+              description="This also deletes all of its tasks."
+              okText="Delete"
+              okButtonProps={{ danger: true }}
+              onConfirm={async () => {
+                await deleteProject.mutateAsync(project.id);
+                navigate('/projects');
+              }}
+            >
+              <Button danger icon={<DeleteOutlined />}>
+                Delete
+              </Button>
+            </Popconfirm>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => addTask()}
+            >
+              Add task
+            </Button>
+          </Space>
+        )}
       </Flex>
 
       <Row gutter={[16, 16]}>
@@ -260,7 +267,11 @@ export function ProjectDetailPage() {
               label: 'Board',
               icon: <AppstoreOutlined />,
               children: (
-                <KanbanBoard tasks={tasks} onEdit={openTask} onAdd={addTask} />
+                <KanbanBoard
+                  tasks={tasks}
+                  onEdit={openTask}
+                  onAdd={isManager ? addTask : undefined}
+                />
               ),
             },
             {

@@ -19,6 +19,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { Link } from 'react-router-dom';
 import { useDeleteTask, useUpdateTaskStatus } from '../api/hooks';
 import { formatDate, relativeDays } from '../utils/format';
+import { useAuth } from '../auth/AuthContext';
 import { MemberAvatar } from './MemberAvatar';
 import { PriorityTag, TASK_STATUS_OPTIONS, TASK_STATUS_HEX } from './tags';
 
@@ -35,6 +36,7 @@ interface Props {
 export function TaskTable({ tasks, loading, showProject, onEdit }: Props) {
   const updateStatus = useUpdateTaskStatus();
   const deleteTask = useDeleteTask();
+  const { isManager } = useAuth();
 
   const columns: ColumnsType<Task> = [
     {
@@ -146,15 +148,17 @@ export function TaskTable({ tasks, loading, showProject, onEdit }: Props) {
               onClick={() => onEdit(task)}
             />
           </Tooltip>
-          <Popconfirm
-            title="Delete this task?"
-            description={task.title}
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => deleteTask.mutateAsync(task.id)}
-          >
-            <Button type="text" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
+          {isManager && (
+            <Popconfirm
+              title="Delete this task?"
+              description={task.title}
+              okText="Delete"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => deleteTask.mutateAsync(task.id)}
+            >
+              <Button type="text" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          )}
         </Space>
       ),
     },

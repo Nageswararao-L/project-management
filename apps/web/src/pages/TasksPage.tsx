@@ -23,6 +23,7 @@ import {
   useProjects,
   useTasks,
 } from '../api/hooks';
+import { useAuth } from '../auth/AuthContext';
 import { KanbanBoard } from '../components/KanbanBoard';
 import { TaskFormDrawer } from '../components/TaskFormDrawer';
 import { TaskTable } from '../components/TaskTable';
@@ -30,6 +31,7 @@ import { PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from '../components/tags';
 import { useDebounced } from '../utils/useDebounced';
 
 export function TasksPage() {
+  const { isManager } = useAuth();
   const [filters, setFilters] = useState<TaskFilters>({});
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search);
@@ -54,7 +56,7 @@ export function TasksPage() {
     <Flex vertical gap={16}>
       <Flex justify="space-between" align="center" wrap gap={8}>
         <Typography.Title level={3} style={{ margin: 0 }}>
-          Tasks
+          {isManager ? 'Tasks' : 'My tasks'}
         </Typography.Title>
         <Space wrap>
           <Segmented
@@ -65,13 +67,15 @@ export function TasksPage() {
               { value: 'board', icon: <AppstoreOutlined />, label: 'Board' },
             ]}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setDrawer({ open: true })}
-          >
-            New task
-          </Button>
+          {isManager && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setDrawer({ open: true })}
+            >
+              New task
+            </Button>
+          )}
         </Space>
       </Flex>
 
@@ -96,14 +100,16 @@ export function TasksPage() {
             }))}
             onChange={(projectId?: number) => update({ projectId })}
           />
-          <Select
-            allowClear
-            showSearch={{ optionFilterProp: 'label' }}
-            placeholder="Assignee"
-            style={{ minWidth: 170 }}
-            options={members.map((m) => ({ value: m.id, label: m.name }))}
-            onChange={(assigneeId?: number) => update({ assigneeId })}
-          />
+          {isManager && (
+            <Select
+              allowClear
+              showSearch={{ optionFilterProp: 'label' }}
+              placeholder="Assignee"
+              style={{ minWidth: 170 }}
+              options={members.map((m) => ({ value: m.id, label: m.name }))}
+              onChange={(assigneeId?: number) => update({ assigneeId })}
+            />
+          )}
           <Select
             mode="multiple"
             allowClear
@@ -143,7 +149,11 @@ export function TasksPage() {
           tasks={tasks}
           showProject
           onEdit={openTask}
-          onAdd={(status) => setDrawer({ open: true, status })}
+          onAdd={
+            isManager
+              ? (status) => setDrawer({ open: true, status })
+              : undefined
+          }
         />
       )}
 

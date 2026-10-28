@@ -9,8 +9,10 @@ import {
   TaskStatus,
   toIsoDate,
   UpcomingDeadline,
+  UserRole,
 } from '@pm/shared';
 import { MoreThanOrEqual, Repository } from 'typeorm';
+import { MemberEntity } from '../members/member.entity';
 import { MembersService } from '../members/members.service';
 import { ProjectsService } from '../projects/projects.service';
 import { TaskEntity } from '../tasks/task.entity';
@@ -37,7 +39,10 @@ export class DashboardService {
     private readonly tasks: Repository<TaskEntity>,
   ) {}
 
-  async getSummary(): Promise<DashboardSummary> {
+  /** Managers get the whole portfolio; users get a summary of their own tasks. */
+  async getSummary(viewer: MemberEntity): Promise<DashboardSummary> {
+    const scopedToUser = viewer.role !== UserRole.Manager;
+    const own = scopedToUser ? { assigneeId: viewer.id } : {};
     const today = toIsoDate(new Date());
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -50,17 +55,21 @@ export class DashboardService {
       workload,
       completedRecently,
     ] = await Promise.all([
-      this.projectsService.findAll(),
+      this.projectsService.findAll({}, viewer),
       this.tasks
         .createQueryBuilder('t')
         .select('t.status', 'status')
         .addSelect('COUNT(*)', 'count')
+        .where(scopedToUser ? 't.assigneeId = :viewerId' : '1 = 1', {
+          viewerId: viewer.id,
+        })
         .groupBy('t.status')
         .getRawMany<{ status: TaskStatus; count: number }>(),
-      this.tasksService.findAll({ overdue: true }),
-      this.tasksService.findAll({ dueWithinDays: UPCOMING_DAYS }),
-      this.membersService.findAll(),
+      this.tasksService.findAll({ overdue: true }, viewer),
+      this.tasksService.findAll({ dueWithinDays: UPCOMING_DAYS }, viewer),
+      this.membersService.findAll(scopedToUser ? viewer.id : undefined),
       this.tasks.countBy({
+        ...own,
         status: TaskStatus.Done,
         completedAt: MoreThanOrEqual(thirtyDaysAgo),
       }),

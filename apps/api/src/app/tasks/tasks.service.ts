@@ -1,17 +1,32 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Task, TaskStatus, toIsoDate } from '@pm/shared';
+import {
+  OwnTaskUpdate,
+  Task,
+  TaskStatus,
+  toIsoDate,
+  UserRole,
+} from '@pm/shared';
 import { Repository } from 'typeorm';
 import { assertDateRange } from '../common/validation';
 import { MemberEntity } from '../members/member.entity';
+import { toMemberJson } from '../members/members.service';
 import { ProjectEntity } from '../projects/project.entity';
 import { escapeLike } from '../projects/projects.service';
 import { CreateTaskDto, TaskQueryDto, UpdateTaskDto } from './dto/task.dto';
 import { TaskEntity } from './task.entity';
+
+const USER_EDITABLE_FIELDS: string[] = [
+  'status',
+  'progress',
+] satisfies (keyof OwnTaskUpdate)[];
+
+const isManager = (member: MemberEntity) => member.role === UserRole.Manager;
 
 @Injectable()
 export class TasksService {
@@ -24,7 +39,11 @@ export class TasksService {
     private readonly members: Repository<MemberEntity>,
   ) {}
 
-  async findAll(query: TaskQueryDto = {}, limit?: number): Promise<Task[]> {
+  /** Users (non-managers) only ever see tasks assigned to them. */
+  async findAll(
+    query: TaskQueryDto = {},
+    viewer?: MemberEntity,
+  ): Promise<Task[]> {
     const today = toIsoDate(new Date());
     const qb = this.tasks
       .createQueryBuilder('t')
@@ -36,6 +55,9 @@ export class TasksService {
 
     if (query.projectId) {
       qb.andWhere('t.projectId = :projectId', { projectId: query.projectId });
+    }
+    if (viewer && !isManager(viewer)) {
+      qb.andWhere('t.assigneeId = :viewerId', { viewerId: viewer.id });
     }
     if (query.assigneeId) {
       qb.andWhere('t.assigneeId = :assigneeId', {
@@ -67,13 +89,12 @@ export class TasksService {
         until: toIsoDate(until),
       });
     }
-    if (limit) qb.take(limit);
 
     return (await qb.getMany()).map((t) => this.toJson(t, today));
   }
 
-  async findOne(id: number): Promise<Task> {
-    return this.toJson(await this.getEntity(id));
+  async findOne(id: number, viewer?: MemberEntity): Promise<Task> {
+    return this.toJson(await this.getEntity(id, viewer));
   }
 
   async create(dto: CreateTaskDto): Promise<Task> {
@@ -96,8 +117,22 @@ export class TasksService {
     return this.findOne(saved.id);
   }
 
-  async update(id: number, dto: UpdateTaskDto): Promise<Task> {
-    const task = await this.getEntity(id);
+  async update(
+    id: number,
+    dto: UpdateTaskDto,
+    viewer?: MemberEntity,
+  ): Promise<Task> {
+    const task = await this.getEntity(id, viewer);
+    if (viewer && !isManager(viewer)) {
+      const notAllowed = Object.keys(dto).filter(
+        (key) => !USER_EDITABLE_FIELDS.includes(key),
+      );
+      if (notAllowed.length) {
+        throw new ForbiddenException(
+          `You can only change the status and progress of your tasks (not: ${notAllowed.join(', ')})`,
+        );
+      }
+    }
     const previousStatus = task.status;
     const startDate = dto.startDate ?? task.startDate;
     const dueDate = dto.dueDate ?? task.dueDate;
@@ -115,8 +150,12 @@ export class TasksService {
     return this.findOne(id);
   }
 
-  updateStatus(id: number, status: TaskStatus): Promise<Task> {
-    return this.update(id, { status });
+  updateStatus(
+    id: number,
+    status: TaskStatus,
+    viewer?: MemberEntity,
+  ): Promise<Task> {
+    return this.update(id, { status }, viewer);
   }
 
   async remove(id: number): Promise<void> {
@@ -124,14 +163,23 @@ export class TasksService {
     await this.tasks.delete({ id });
   }
 
-  private async getEntity(id: number): Promise<TaskEntity> {
+  private async getEntity(
+    id: number,
+    viewer?: MemberEntity,
+  ): Promise<TaskEntity> {
     const task = await this.tasks
       .createQueryBuilder('t')
       .leftJoinAndSelect('t.assignee', 'assignee')
       .leftJoinAndSelect('t.project', 'project')
       .where('t.id = :id', { id })
       .getOne();
-    if (!task) throw new NotFoundException(`Task #${id} not found`);
+    // Hide other people's tasks from users entirely.
+    if (
+      !task ||
+      (viewer && !isManager(viewer) && task.assigneeId !== viewer.id)
+    ) {
+      throw new NotFoundException(`Task #${id} not found`);
+    }
     return task;
   }
 
@@ -192,13 +240,7 @@ export class TasksService {
       project: project
         ? { id: project.id, code: project.code, name: project.name }
         : undefined,
-      assignee: assignee
-        ? {
-            ...assignee,
-            createdAt: assignee.createdAt.toISOString(),
-            updatedAt: assignee.updatedAt.toISOString(),
-          }
-        : null,
+      assignee: assignee ? toMemberJson(assignee) : null,
       isOverdue: t.status !== TaskStatus.Done && t.dueDate < today,
       completedAt: t.completedAt ? t.completedAt.toISOString() : null,
       createdAt: t.createdAt.toISOString(),
