@@ -4,7 +4,10 @@
   "license": "MIT",
   "scripts": {
     "db:up": "docker compose up -d mssql",
-    "db:down": "docker compose down",
+    "db:down": "docker compose stop mssql",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f api",
     "dev": "nx run-many -t serve -p api web",
     "dev:api": "nx serve api",
     "dev:web": "nx serve web",

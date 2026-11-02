@@ -1,15 +1,75 @@
+# Runs the whole app in Docker (Docker Desktop on Windows, macOS or Linux):
+#
+#   docker compose up -d --build     ->  http://localhost:8080
+#
+# Settings can be overridden in a `.env` file next to this file
+# (see .env.docker.example). `npm run db:up` starts only the database
+# for local development with `npm run dev`.
+name: project-management
+
 services:
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    # SQL Server images are x86-64 only; Docker Desktop on Apple Silicon runs
+    # them through Rosetta emulation.
+    platform: linux/amd64
     container_name: pm-mssql
     environment:
       ACCEPT_EULA: 'Y'
-      MSSQL_SA_PASSWORD: 'YourStrong!Passw0rd'
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-YourStrong!Passw0rd}
       MSSQL_PID: Developer
     ports:
-      - '1433:1433'
+      - '${MSSQL_PORT:-1433}:1433'
     volumes:
       - mssql-data:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" -b -o /dev/null
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      target: api
+    image: project-management-api
+    container_name: pm-api
+    depends_on:
+      mssql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mssql
+      DB_PORT: 1433
+      DB_USER: sa
+      DB_PASSWORD: ${MSSQL_SA_PASSWORD:-YourStrong!Passw0rd}
+      DB_NAME: ${DB_NAME:-ProjectManagement}
+      DB_ENCRYPT: 'false'
+      DB_TRUST_SERVER_CERTIFICATE: 'true'
+      # Change this to a long random value (see .env.docker.example).
+      JWT_SECRET: ${JWT_SECRET:-change-me-local-docker-secret}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-12h}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrator}
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      target: web
+    image: project-management-web
+    container_name: pm-web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    restart: unless-stopped
 
 volumes:
   mssql-data:
