@@ -65,17 +65,18 @@ libs/
 Only [Docker Desktop](https://www.docker.com/products/docker-desktop/) is needed –
 no Node.js or SQL Server installation.
 
-1. Start Docker Desktop and wait until it says _Engine running_.
-2. Open a terminal (PowerShell on Windows) in the project folder and run:
+1. Install and start Docker Desktop, and wait until it says **Engine running**.
+2. Get the code: `git clone https://github.com/Nageswararao-L/project-management.git`
+   (or on GitHub: **Code → Download ZIP**, then unzip it).
+3. Start the app:
+   - **Windows** – double-click **`start-docker.bat`** in the project folder.
+   - **macOS / Linux** – run `./start-docker.sh` in a terminal in the project folder.
+   - Or run `docker compose up -d --build` yourself.
 
-   ```bash
-   docker compose up -d --build
-   ```
+   The first run downloads SQL Server and builds the app (5–10 minutes). The script
+   opens **http://localhost:8080** when everything is ready.
 
-   The first run downloads SQL Server and builds the app (a few minutes).
-
-3. Open **http://localhost:8080** and sign in, e.g. `aarav.patel@example.com` /
-   `Password@123` (see [Signing in](#signing-in)).
+4. Sign in, e.g. `aarav.patel@example.com` / `Password@123` (see [Signing in](#signing-in)).
 
 Docker Desktop shows the app as **project-management** with three containers:
 

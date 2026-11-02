@@ -29,20 +29,42 @@ export function connectionSettings(config: ConfigService) {
   };
 }
 
+/**
+ * Connects to `master`, retrying while SQL Server is still starting
+ * (e.g. both containers start together after Docker restarts).
+ */
+async function connectToMaster(config: ConfigService) {
+  const s = connectionSettings(config);
+  const timeoutMs = Number(config.get('DB_CONNECT_TIMEOUT', '120')) * 1000;
+  const deadline = Date.now() + timeoutMs;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await new mssql.ConnectionPool({
+        server: s.host,
+        port: s.port,
+        user: s.username,
+        password: s.password,
+        database: 'master',
+        options: {
+          encrypt: s.encrypt,
+          trustServerCertificate: s.trustServerCertificate,
+        },
+      }).connect();
+    } catch (error) {
+      if (Date.now() >= deadline) throw error;
+      Logger.warn(
+        `SQL Server at ${s.host}:${s.port} is not ready yet (attempt ${attempt}): ${(error as Error).message}. Retrying in 3s...`,
+        'Database',
+      );
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
+  }
+}
+
 /** Creates the database on first start so a fresh SQL Server works out of the box. */
 async function ensureDatabase(config: ConfigService) {
   const s = connectionSettings(config);
-  const pool = await new mssql.ConnectionPool({
-    server: s.host,
-    port: s.port,
-    user: s.username,
-    password: s.password,
-    database: 'master',
-    options: {
-      encrypt: s.encrypt,
-      trustServerCertificate: s.trustServerCertificate,
-    },
-  }).connect();
+  const pool = await connectToMaster(config);
   try {
     const result = await pool
       .request()
