@@ -13,7 +13,12 @@ COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY libs/shared/package.json libs/shared/
-RUN npm ci --no-audit --no-fund
+# `npm ci` refuses to run when package-lock.json does not match package.json
+# (e.g. after `npm install` with a different npm version on the host);
+# fall back to `npm install`, which reconciles them.
+RUN npm ci --no-audit --no-fund \
+    || (echo 'package-lock.json is out of sync with package.json; running npm install instead' \
+        && npm install --no-audit --no-fund)
 
 COPY . .
 RUN npx nx run-many -t build -p api web
