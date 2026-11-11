@@ -19,7 +19,7 @@ services:
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-YourStrong!Passw0rd}
       MSSQL_PID: Developer
     ports:
-      - '${MSSQL_PORT:-1433}:1433'
+      - '${MSSQL_PORT:-14330}:1433'
     volumes:
       - mssql-data:/var/opt/mssql
     healthcheck:

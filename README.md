@@ -99,12 +99,12 @@ the SQL Server password, the sign-in secret (`JWT_SECRET` – set a long random 
 turn off demo data, or create your own first manager (`ADMIN_EMAIL` / `ADMIN_PASSWORD`).
 Then run `docker compose up -d` again.
 
-**Connect with SSMS / Azure Data Studio** – server `localhost,1433`, login `sa`,
+**Connect with SSMS / Azure Data Studio** – server `localhost,14330`, login `sa`,
 password `YourStrong!Passw0rd` (or your `MSSQL_SA_PASSWORD`), database `ProjectManagement`.
 
 **Troubleshooting**
 
-- _Port is already allocated_ – another program uses 8080 or 1433: set `WEB_PORT` /
+- _Port is already allocated_ – another program uses 8080 or 14330: set `WEB_PORT` /
   `MSSQL_PORT` in `.env` (e.g. `WEB_PORT=8081`), or stop a local SQL Server.
 - _Mac with Apple Silicon (M1–M4)_ – SQL Server runs through emulation. In Docker Desktop
   enable _Settings → General → Use Rosetta for x86_64/amd64 emulation_.
@@ -141,7 +141,7 @@ Prerequisites: Node.js 20+ and a SQL Server 2022 instance.
 
    | Variable                                        | Default              | Description                                                            |
    | ----------------------------------------------- | -------------------- | ---------------------------------------------------------------------- |
-   | `DB_HOST` / `DB_PORT`                           | `localhost` / `1433` | SQL Server address                                                     |
+   | `DB_HOST` / `DB_PORT`                           | `localhost` / `14330` | SQL Server address                                                     |
    | `DB_USER` / `DB_PASSWORD`                       | `sa` / –             | SQL login                                                              |
    | `DB_NAME`                                       | `ProjectManagement`  | Database name                                                          |
    | `DB_ENCRYPT` / `DB_TRUST_SERVER_CERTIFICATE`    | `false` / `true`     | TLS options (Azure SQL: `true` / `false`)                              |
