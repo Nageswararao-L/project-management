@@ -132,7 +132,8 @@ Prerequisites: Node.js 20+ and a SQL Server 2022 instance.
    npm run db:up
    ```
 
-3. **Configure the API** – copy the example env file and adjust the connection settings:
+3. **Configure the API** (optional) – without `apps/api/.env` the API uses the defaults in
+   `apps/api/.env.example`, which match `npm run db:up`. To change them, copy the file and edit it:
 
    ```bash
    cp apps/api/.env.example apps/api/.env

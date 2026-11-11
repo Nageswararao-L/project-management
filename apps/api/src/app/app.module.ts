@@ -14,7 +14,10 @@ import { TasksModule } from './tasks/tasks.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['apps/api/.env', '.env'],
+      // The first file that defines a variable wins; real environment variables
+      // (e.g. from docker-compose) always win. The example file supplies working
+      // development defaults when apps/api/.env has not been created.
+      envFilePath: ['apps/api/.env', '.env', 'apps/api/.env.example'],
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],

@@ -56,7 +56,14 @@ async function connectToMaster(config: ConfigService) {
         `SQL Server at ${s.host}:${s.port} is not ready yet (attempt ${attempt}): ${(error as Error).message}. Retrying in 3s...`,
         'Database',
       );
-      if (attempt === 1 && ['localhost', '127.0.0.1'].includes(s.host)) {
+      if (attempt === 1 && /Login failed/i.test((error as Error).message)) {
+        Logger.warn(
+          `SQL Server rejected user '${s.username}'. DB_PASSWORD (in apps/api/.env or the environment) ` +
+            'must match the SQL Server password (MSSQL_SA_PASSWORD for the Docker database). ' +
+            'If SQL Server is also installed on this computer, it may be the one answering on this port.',
+          'Database',
+        );
+      } else if (attempt === 1 && ['localhost', '127.0.0.1'].includes(s.host)) {
         Logger.warn(
           'Is SQL Server running? For `npm run dev` start it first with `npm run db:up` ' +
             '(or run the whole app in Docker with `docker compose up -d --build`).',
