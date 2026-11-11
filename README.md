@@ -139,21 +139,21 @@ Prerequisites: Node.js 20+ and a SQL Server 2022 instance.
    cp apps/api/.env.example apps/api/.env
    ```
 
-   | Variable                                        | Default              | Description                                                            |
-   | ----------------------------------------------- | -------------------- | ---------------------------------------------------------------------- |
+   | Variable                                        | Default               | Description                                                            |
+   | ----------------------------------------------- | --------------------- | ---------------------------------------------------------------------- |
    | `DB_HOST` / `DB_PORT`                           | `localhost` / `14330` | SQL Server address                                                     |
-   | `DB_USER` / `DB_PASSWORD`                       | `sa` / –             | SQL login                                                              |
-   | `DB_NAME`                                       | `ProjectManagement`  | Database name                                                          |
-   | `DB_ENCRYPT` / `DB_TRUST_SERVER_CERTIFICATE`    | `false` / `true`     | TLS options (Azure SQL: `true` / `false`)                              |
-   | `DB_CREATE_DATABASE`                            | `true`               | Create the database on startup if missing                              |
-   | `DB_MIGRATIONS_RUN`                             | `true`               | Apply pending migrations on startup                                    |
-   | `DB_SYNCHRONIZE`                                | `false`              | Auto-sync schema from entities (dev only)                              |
-   | `SEED_DEMO_DATA`                                | `true` in example    | Insert sample projects, tasks and team into an empty database          |
-   | `JWT_SECRET`                                    | dev secret           | Secret used to sign sign-in tokens (**required in production**)        |
-   | `JWT_EXPIRES_IN`                                | `12h`                | How long a sign-in lasts                                               |
-   | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | –                    | Creates the first manager account on startup if no manager can sign in |
-   | `PORT`                                          | `3000`               | API port                                                               |
-   | `CORS_ORIGIN`                                   | all                  | Comma-separated allowed origins                                        |
+   | `DB_USER` / `DB_PASSWORD`                       | `sa` / –              | SQL login                                                              |
+   | `DB_NAME`                                       | `ProjectManagement`   | Database name                                                          |
+   | `DB_ENCRYPT` / `DB_TRUST_SERVER_CERTIFICATE`    | `false` / `true`      | TLS options (Azure SQL: `true` / `false`)                              |
+   | `DB_CREATE_DATABASE`                            | `true`                | Create the database on startup if missing                              |
+   | `DB_MIGRATIONS_RUN`                             | `true`                | Apply pending migrations on startup                                    |
+   | `DB_SYNCHRONIZE`                                | `false`               | Auto-sync schema from entities (dev only)                              |
+   | `SEED_DEMO_DATA`                                | `true` in example     | Insert sample projects, tasks and team into an empty database          |
+   | `JWT_SECRET`                                    | dev secret            | Secret used to sign sign-in tokens (**required in production**)        |
+   | `JWT_EXPIRES_IN`                                | `12h`                 | How long a sign-in lasts                                               |
+   | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | –                     | Creates the first manager account on startup if no manager can sign in |
+   | `PORT`                                          | `3000`                | API port                                                               |
+   | `CORS_ORIGIN`                                   | all                   | Comma-separated allowed origins                                        |
 
 4. **Run the API and the web app**
 
