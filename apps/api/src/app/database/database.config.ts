@@ -56,6 +56,13 @@ async function connectToMaster(config: ConfigService) {
         `SQL Server at ${s.host}:${s.port} is not ready yet (attempt ${attempt}): ${(error as Error).message}. Retrying in 3s...`,
         'Database',
       );
+      if (attempt === 1 && ['localhost', '127.0.0.1'].includes(s.host)) {
+        Logger.warn(
+          'Is SQL Server running? For `npm run dev` start it first with `npm run db:up` ' +
+            '(or run the whole app in Docker with `docker compose up -d --build`).',
+          'Database',
+        );
+      }
       await new Promise((resolve) => setTimeout(resolve, 3000));
     }
   }
