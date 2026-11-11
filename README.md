@@ -110,6 +110,9 @@ password `YourStrong!Passw0rd` (or your `MSSQL_SA_PASSWORD`), database `ProjectM
   enable _Settings → General → Use Rosetta for x86_64/amd64 emulation_.
 - _Windows_ – Docker Desktop with the WSL 2 backend is recommended; give it at least 4 GB
   of memory (SQL Server needs 2 GB).
+- _Sign-in says "server is not available" / error 502_ – the API is not running yet.
+  Wait a minute after starting; check with `docker compose ps` (`pm-api` should be
+  _healthy_) and `docker compose logs api --tail 50`.
 - _SQL Server keeps restarting_ – the `sa` password is too weak; it needs 8+ characters
   with upper case, lower case, a digit and a symbol.
 

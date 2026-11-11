@@ -54,6 +54,9 @@ export function errorMessage(error: unknown): string {
     if (Array.isArray(message)) return message.join('\n');
     if (message) return message;
     if (!error.response) return 'Cannot reach the server. Is the API running?';
+    if ([502, 503, 504].includes(error.response.status)) {
+      return 'The server is not available right now (it may still be starting). Please try again in a minute.';
+    }
     return error.message;
   }
   return error instanceof Error ? error.message : String(error);
